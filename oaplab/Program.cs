@@ -1,115 +1,98 @@
-﻿using System;
+﻿using Microsoft.VisualBasic.FileIO;
+using System;
+using System.Collections.Generic;
 using System.IO;
-using System.Threading;
+using System.Linq;
+using System.Runtime.Serialization;
+using System.Runtime.Serialization.Json;
+using System.Text;
 using System.Threading.Tasks;
+using System.Xml.Serialization;
+
 
 namespace LabaBati
 {
+    [Serializable]
+    [DataContract]
+    public class Student
+    {
+        [DataMember]
+        public string Name { get; set; }
+        [DataMember]
+        public DateTime BirthDay { get; set; }
+        [DataMember]
+        public string Group { get; set; }
+        public Student() { }
+    }
+
+
     class Program
-    { /*
-        static void Factorial()
+    {
+
+        static void Import()
         {
-            int result = 1;
-            for (int i = 1; i <= 6; i++)
+            var StudentList = new List<Student>();
+            using (TextFieldParser parser = new TextFieldParser(new StringReader("Иванов Иван Иванович,01.01.2000,И-21\nПетров Петр Петрович,02.02.2002,С-21\nСидоров Сидор Сидорович,03.03.2003,И-31")))
             {
-                result *= i;
+                // свойство TextFieldType определяет тип полей: с разделителями или фиксированной ширины
+                parser.TextFieldType = FieldType.Delimited;
+
+                // можно указать произвольный разделитель
+                parser.SetDelimiters(",");
+
+                // считываем пока не дойдем до конца файла
+                while (!parser.EndOfData)
+                {
+                    //метод ReadFields разбивает исходную строку на массив строк
+                    string[] fields = parser.ReadFields();
+                    var Student1 = new Student();
+                    Student1.Name = fields[0];
+
+                    var DateParts = fields[1].Split('.');
+
+                    Student1.BirthDay = new DateTime(Convert.ToInt32(DateParts[2]), Convert.ToInt32(DateParts[1]), Convert.ToInt32(DateParts[0]));
+
+                    Student1.Group = fields[2];
+                    StudentList.Add(Student1);
+
+                }
+                XmlSerializer formatter = new XmlSerializer(typeof(Student[]));
+                using (FileStream fs = new FileStream("Students.xml", FileMode.OpenOrCreate))
+                {
+                    formatter.Serialize(fs, StudentList.ToArray());
+
+                }
             }
-            Thread.Sleep(8000);
-            Console.WriteLine($"Факториал равен {result}");
         }
-        // определение асинхронного метода
-        static async void FactorialAsync()
+
+        static void Export()
+
         {
-            Console.WriteLine("Введите число: ");
-            var chislo = Convert.ToDouble(Console.ReadLine());
-            var Factorial1 = 1;
-            for (int i = 2; i <= chislo; i++)
+            using (FileStream fs = new FileStream("Students.xml", FileMode.OpenOrCreate))
             {
-                Factorial1 = Factorial1 * i;
-                Console.Write($"{Factorial1}\t");
+                XmlSerializer formatter = new XmlSerializer(typeof(Student[]));
+                Student[] newpeople = (Student[])formatter.Deserialize(fs);
+
+                var Serializer = new DataContractJsonSerializer(typeof(Student[]));
+
+                var ms = new MemoryStream();
+
+                Serializer.WriteObject(ms, newpeople);
+
+                ms.Position = 0;
+
+
+                Console.WriteLine(Encoding.UTF8.GetString(ms.GetBuffer(), 0, (int)ms.Length));
             }
-            Console.Write($"\nФакториар равен = {Factorial1}\t");
+            Console.ReadLine();
         }
+
 
         static void Main(string[] args)
         {
-            FactorialAsync();   // вызов асинхронного метода
+            //Import();
 
-            Console.WriteLine("\nВведите число: ");
-            int n = Int32.Parse(Console.ReadLine());
-            Console.WriteLine($"Квадрат числа равен {n * n}");
-
-            Console.Read();
-        */
-        /*
-        static async void ReadWriteAsync()
-        {
-            string s = "Hello world! One step at a time";
-
-            // hello.txt - файл, который будет записываться и считываться
-            using (StreamWriter writer = new StreamWriter("hello.txt", false))
-            {
-                await writer.WriteLineAsync(s);  // асинхронная запись в файл
-            }
-            using (StreamReader reader = new StreamReader("hello.txt"))
-            {
-                string result = await reader.ReadToEndAsync();  // асинхронное чтение из файла
-                Console.WriteLine(result);
-            }
-        }
-        static void Main(string[] args)
-        {
-            ReadWriteAsync();
-
-            Console.WriteLine("Некоторая работа");
-            Console.Read();
-        */
-        /*
-        static async void ReadWriteAsync()
-        {
-            string s = "Hello world! One step at a time";
-
-            // hello.txt - файл, который будет записываться и считываться            
-            using (StreamReader reader = new StreamReader("hello.txt"))
-            {
-                string result = await reader.ReadToEndAsync();  // асинхронное чтение из файла
-                Console.WriteLine(result);
-            }
-        }
-        static void Main(string[] args)
-        {
-            ReadWriteAsync();
-
-            Console.WriteLine("Некоторая работа");
-            Console.Read();
-
-        */
-        /*
-        static void Factorial(int n)
-        {
-            int result = 1;
-            for (int i = 1; i <= n; i++)
-            {
-                result *= i;
-            }
-            Console.WriteLine($"Факториал равен {result}");
-        }
-
-        // определение асинхронного метода
-        static async Task FactorialAsync(int n)
-        {
-            await Task.Run(() => Factorial(n));
-        }
-        static void Main(string[] args)
-        {
-            FactorialAsync(5);
-            FactorialAsync(6);
-            FactorialAsync(7);
-            Console.WriteLine("Некоторая работа");
-            Console.Read();
-        */
-
-    
+            Export();
 
         }
     }
